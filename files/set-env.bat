@@ -4,23 +4,25 @@
 :: # Setting up Environment...
 :: ########################################################
 
-set SCRIPT_DIR=%~dp0
+set BK_ROOT=%~dp0
 
 :: for these we need the bin dirs in PATH
-set DEVKITDIR=%SCRIPT_DIR%tools\devkit
-set KDIFF3DIR=%SCRIPT_DIR%tools\kdiff3
-set CYGWINSSHDIR=%SCRIPT_DIR%tools\cygwin-ssh
-set CYGWINRSYNCDIR=%SCRIPT_DIR%tools\cygwin-rsync
-set CONEMUDIR=%SCRIPT_DIR%tools\conemu
-set SUBLIMEDIR=%SCRIPT_DIR%tools\sublimetext2
-set PUTTYDIR=%SCRIPT_DIR%tools\putty
-set CLINKDIR=%SCRIPT_DIR%tools\clink
-set VAGRANTDIR=%SCRIPT_DIR%tools\vagrant\HashiCorp\Vagrant
-set TERRAFORMDIR=%SCRIPT_DIR%tools\terraform
-set PACKERDIR=%SCRIPT_DIR%tools\packer
-set CONSULDIR=%SCRIPT_DIR%tools\consul
-set CHEFDKDIR=%SCRIPT_DIR%tools\chefdk
-set CHEFDKHOMEDIR=%SCRIPT_DIR%home\.chefdk
+set SCRIPTSDIR=%BK_ROOT%tools\scripts
+set DOCKERDIR=%BK_ROOT%tools\docker
+set DEVKITDIR=%BK_ROOT%tools\devkit
+set KDIFF3DIR=%BK_ROOT%tools\kdiff3
+set CWRSYNCDIR=%BK_ROOT%tools\cwrsync\cwRsync_5.4.1_x86_Free
+set CONEMUDIR=%BK_ROOT%tools\conemu
+set ATOMDIR=%BK_ROOT%tools\atom\Atom\resources\cli
+set APMDIR=%BK_ROOT%tools\atom\Atom\resources\app\apm\bin
+set PUTTYDIR=%BK_ROOT%tools\putty
+set CLINKDIR=%BK_ROOT%tools\clink
+set VAGRANTDIR=%BK_ROOT%tools\vagrant\HashiCorp\Vagrant
+set TERRAFORMDIR=%BK_ROOT%tools\terraform
+set PACKERDIR=%BK_ROOT%tools\packer
+set CONSULDIR=%BK_ROOT%tools\consul
+set CHEFDKDIR=%BK_ROOT%tools\chefdk
+set CHEFDKHOMEDIR=%BK_ROOT%home\.chefdk
 
 :: inject clink into current cmd.exe
 :: call %CLINKDIR%\clink.bat inject
@@ -28,18 +30,38 @@ set CHEFDKHOMEDIR=%SCRIPT_DIR%home\.chefdk
 :: set %RI_DEVKIT$ env var and add DEVKIT to the PATH
 call %DEVKITDIR%\devkitvars.bat
 
-:: use portable git, looks for %HOME%\.gitconfig 
-set GITDIR=%SCRIPT_DIR%tools\portablegit
-set HOME=%SCRIPT_DIR%home
+:: use portable git, looks for %HOME%\.gitconfig
+set GITDIR=%BK_ROOT%tools\portablegit
+set HOME=%BK_ROOT%home
+
+:: set ATOM_HOME to make it devpack-local
+set ATOM_HOME=%HOME%\.atom
+
+:: set atom as the default EDITOR
+set EDITOR=atom.sh --wait
+
+:: set the home dir for boot2docker
+set BOOT2DOCKER_DIR=%HOME%\.boot2docker
+
+:: init the shell for boot2docker
+set DOCKER_HOST=tcp://192.168.59.103:2376
+set DOCKER_CERT_PATH=%BOOT2DOCKER_DIR%\certs\boot2docker-vm
+set DOCKER_TLS_VERIFY=1
+
+:: experimental: enable remote docker host patch in vagrant
+set VAGRANT_DOCKER_REMOTE_HOST_PATCH=1
 
 :: Chef-DK embedded Ruby is now the primary one!
 :: see: http://jtimberman.housepub.org/blog/2014/04/30/chefdk-and-ruby/
 :: see: `chef shell-init powershell`
-set GEM_ROOT=%CHEFDKDIR%\embedded\lib\ruby\gems\2.0.0
-set GEM_HOME=%CHEFDKHOMEDIR%\gem\ruby\2.0.0
+set GEM_ROOT=%CHEFDKDIR%\embedded\lib\ruby\gems\2.1.0
+set GEM_HOME=%CHEFDKHOMEDIR%\gem\ruby\2.1.0
 set GEM_PATH=%GEM_HOME%;%GEM_ROOT%
 :: that's how the PATH entries are generated for chef shell-init
-set CHEFDK_PATH_ENTRIES=%CHEFDKDIR%\bin;%CHEFDKHOMEDIR%\gem\ruby\2.0.0\bin;%CHEFDKDIR%\embedded\bin
+set CHEFDK_PATH_ENTRIES=%CHEFDKDIR%\bin;%CHEFDKHOMEDIR%\gem\ruby\2.1.0\bin;%CHEFDKDIR%\embedded\bin
+
+:: also set the newly introduced (as of ChefDK 0.7.0) CHEFDK_HOME environment
+set CHEFDK_HOME=%CHEFDKHOMEDIR%
 
 
 :: prompt for .gitconfig username/email
@@ -55,29 +77,23 @@ if "%GIT_CONF_EMAIL%"=="" (
 cmd /C %GITDIR%\cmd\git config --global --replace user.name "%GIT_CONF_USERNAME%"
 cmd /C %GITDIR%\cmd\git config --global --replace user.email "%GIT_CONF_EMAIL%"
 
-:: toggle proxy based on env var
-if "%HTTP_PROXY%"=="" (
-  cmd /C %GITDIR%\cmd\git config --global --unset http.proxy
-) else (
-  cmd /C %GITDIR%\cmd\git config --global --replace http.proxy %HTTP_PROXY%
-)
 
-:: don't let VirtualBox use %HOME% instead of %USERPROFILE%, 
-:: otherwise it would become confused when W:\ is unmounted 
+:: don't let VirtualBox use %HOME% instead of %USERPROFILE%,
+:: otherwise it would become confused when W:\ is unmounted
 set VBOX_USER_HOME=%USERPROFILE%
 
 :: set VAGRANT_HOME explicitly, defaults to %USERPROFILE%
 set VAGRANT_HOME=%HOME%\.vagrant.d
 
-:: set proper TERM to not break `vagrant ssh` terminal, 
+:: set proper TERM to not break `vagrant ssh` terminal,
 :: see https://github.com/tknerr/bills-kitchen/issues/64
 set TERM=cygwin
 
-:: trick vagrant to detect colored output for windows, see here:
+:: trick vagrant to detect colored output for Windows, see here:
 :: https://github.com/mitchellh/vagrant/blob/7ef6c5d9d7d4753a219d3ab35afae0d475430cae/lib/vagrant/util/platform.rb#L89
 set ANSICON=true
 
-:: add recent root certificates to prevent SSL errors on Windos, see:
+:: add recent root certificates to prevent SSL errors on Windows, see:
 :: https://gist.github.com/fnichol/867550
 set SSL_CERT_FILE=%HOME%\cacert.pem
 
@@ -85,20 +101,25 @@ set SSL_CERT_FILE=%HOME%\cacert.pem
 set CYGWIN=nodosfilewarning
 
 :: show the environment
+echo BK_ROOT=%BK_ROOT%
+echo HOME=%HOME%
+echo SCRIPTSDIR=%SCRIPTSDIR%
 echo CHEFDKDIR=%CHEFDKDIR%
 echo CHEFDKHOMEDIR=%CHEFDKHOMEDIR%
 echo GEM_ROOT=%GEM_ROOT%
 echo GEM_HOME=%GEM_HOME%
 echo GEM_PATH=%GEM_PATH%
+echo DOCKERDIR=%DOCKERDIR%
+echo BOOT2DOCKER_DIR=%BOOT2DOCKER_DIR%
 echo DEVKITDIR=%DEVKITDIR%
 echo VBOX_USER_HOME=%VBOX_USER_HOME%
 echo VBOX_INSTALL_PATH=%VBOX_INSTALL_PATH%
 echo VBOX_MSI_INSTALL_PATH=%VBOX_MSI_INSTALL_PATH%
 echo KDIFF3DIR=%KDIFF3DIR%
-echo CYGWINSSHDIR=%CYGWINSSHDIR%
-echo CYGWINRSYNCDIR=%CYGWINRSYNCDIR%
+echo CWRSYNCDIR=%CWRSYNCDIR%
 echo CONEMUDIR=%CONEMUDIR%
-echo SUBLIMEDIR=%SUBLIMEDIR%
+echo ATOMDIR=%ATOMDIR%
+echo APMDIR=%APMDIR%
 echo PUTTYDIR=%PUTTYDIR%
 echo CLINKDIR=%CLINKDIR%
 echo VAGRANTDIR=%VAGRANTDIR%
@@ -109,11 +130,14 @@ echo VAGRANT_HOME=%VAGRANT_HOME%
 echo GITDIR=%GITDIR%
 echo GIT_CONF_USERNAME=%GIT_CONF_USERNAME%
 echo GIT_CONF_EMAIL=%GIT_CONF_EMAIL%
-echo HTTP_PROXY=%HTTP_PROXY%
 
 :: command aliases
-:: see https://stackoverflow.com/questions/10438508/error6-while-trying-to-use-sublime-text-to-msbuild
-@doskey vi=START "Sublime Text 2" sublime_text $*
+@doskey vi=atom.cmd $*
 @doskey be=bundle exec $*
+@doskey b2d=boot2docker $*
 
+<<<<<<< HEAD
 set PATH=%VAGRANTDIR%\bin;%CHEFDK_PATH_ENTRIES%;%CONSULDIR%;%PACKERDIR%;%TERRAFORMDIR%;%GITDIR%\cmd;%KDIFF3DIR%;%CYGWINRSYNCDIR%;%CYGWINSSHDIR%;%VAGRANTDIR%\embedded\bin;%CONEMUDIR%;%SUBLIMEDIR%;%PUTTYDIR%;%VBOX_MSI_INSTALL_PATH%;%VBOX_INSTALL_PATH%;%PATH%
+=======
+set PATH=%SCRIPTSDIR%;%DOCKERDIR%;%CHEFDK_PATH_ENTRIES%;%CONSULDIR%;%PACKERDIR%;%TERRAFORMDIR%;%VAGRANTDIR%\bin;%GITDIR%\cmd;%GITDIR%;%KDIFF3DIR%;%CWRSYNCDIR%;%VAGRANTDIR%\embedded\bin;%CONEMUDIR%;%ATOMDIR%;%APMDIR%;%PUTTYDIR%;%VBOX_MSI_INSTALL_PATH%;%VBOX_INSTALL_PATH%;%PATH%
+>>>>>>> refs/remotes/tknerr/master

@@ -1,22 +1,37 @@
 
 # Bill's Kitchen
 
-A [DevPack](http://blog.tknerr.de/blog/2014/10/09/devpack-philosophy-aka-works-on-your-machine/) with all you (or Bill Gates would) need for cooking with Chef and Vagrant on Windows, shrink-wrapped in a portable package.
+[![Build status](https://ci.appveyor.com/api/projects/status/d7j751lm3fm8gu9s/branch/master?svg=true)](https://ci.appveyor.com/project/tknerr/bills-kitchen/branch/master)
 
-![Bill's Kitchen Screenshot](https://raw.github.com/tknerr/bills-kitchen/master/doc/bills_kitchen_screenshot.png) 
 
-## What's inside?
+A [DevPack](http://blog.tknerr.de/blog/2014/10/09/devpack-philosophy-aka-works-on-your-machine/) with all you (or Bill Gates would) need for cooking with Chef, Vagrant and Docker on Windows, shrink-wrapped in a portable package.
+
+![Bill's Kitchen Screenshot](https://raw.github.com/tknerr/bills-kitchen/master/doc/bills_kitchen_screenshot.png)
+
+## Installation and Usage
+
+As the only prerequisite you need to have a recent version of [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed (sorry, couldn't make that one portable).
+
+Using Bill's Kitchen itself is fairly simple. There is nothing to install, just unpack and go:
+
+1. Grab the latest `bills-kitchen-<version>.7z` package from the [releases page](https://github.com/tknerr/bills-kitchen/releases) and unpack it
+1. Mount the kitchen to the `W:\` drive by double-clicking the `mount-drive.bat` file
+1. Click `W:\Launch ConEmu.lnk` to open a command prompt (also runs `W:\set-env.bat` to set up the environment)
+1. Start hacking!
+
+## What's included?
 
 ### Main Tools
 
 The main tools for cooking with Chef / Vagrant:
 
-* [Chef-DK](http://www.getchef.com/downloads/chef-dk/windows/) 0.3.6, with embedded [Ruby](http://rubyinstaller.org/downloads/) 2.0.0
+* [ChefDK](http://www.getchef.com/downloads/chef-dk/windows/) 0.7.0, with embedded [Ruby](http://rubyinstaller.org/downloads/) 2.1.5
 * [DevKit](http://rubyinstaller.org/add-ons/devkit/) 4.7.2
-* [Vagrant](http://vagrantup.com/) 1.7.2
-* [Terraform](http://terraform.io/) 0.3.5
-* [Packer](http://packer.io/) 0.7.5
-* [Consul](http://consul.io/) 0.4.1
+* [Vagrant](http://vagrantup.com/) 1.7.4
+* [Terraform](http://terraform.io/) 0.6.3
+* [Packer](http://packer.io/) 0.8.6
+* [Consul](http://consul.io/) 0.5.2
+* [Docker](http://docker.io/) 1.7.1 (using boot2docker)
 
 ### Plugins
 
@@ -24,13 +39,15 @@ These plugins are pre-installed:
 
  * vagrant plugins:
    * [vagrant-omnibus](https://github.com/schisamo/vagrant-omnibus) - installs omnibus chef in a vagrant VM
-   * [vagrant-cachier](https://github.com/fgrehm/vagrant-cachier) - caches all kinds of packages you intsall in the vagrant VMs
+   * [vagrant-cachier](https://github.com/fgrehm/vagrant-cachier) - caches all kinds of packages you install in the vagrant VMs
    * [vagrant-berkshelf](https://github.com/berkshelf/vagrant-berkshelf) - berkshelf integration for vagrant
    * [vagrant-toplevel-cookbooks](https://github.com/tknerr/vagrant-toplevel-cookbooks) - support for one top-level cookbook per vagrant VM
+   * [vagrant-proxyconf](https://github.com/tmatilai/vagrant-proxyconf) - for configuring a proxy inside the VMs
+   * [vagrant-winrm](https://github.com/criteo/vagrant-winrm) - super useful when setting up Windows VMs
    * ...use `vagrant install <plugin>` to install more
  * knife plugins (just as an example):
    * [knife-audit](https://github.com/jbz/knife-audit) - keeps track of which cookbooks are used by which node
-   * [knife-server](https://github.com/fnichol/knife-server) - sets up and backs uo a chef server
+   * [knife-server](https://github.com/fnichol/knife-server) - sets up and backs up a chef server
    * ...use `chef gem install <plugin>` to install more
 
 ### Supporting Tools
@@ -38,11 +55,11 @@ These plugins are pre-installed:
 Useful additions for a better cooking experience:
 
 * [ConEmu](https://code.google.com/p/conemu-maximus5/) - a better Windows console with colours, tabs, etc...
-* [SublimeText2](http://www.sublimetext.com/) - a better editor (trial version) with additional packages for [Chef](https://github.com/cabeca/SublimeChef) and [Cucumber](https://github.com/npverni/cucumber-sublime2-bundle) installed
-* [PortableGit](https://code.google.com/p/msysgit/) - git client for Windows (preconfigured with [kdiff3](http://kdiff3.sourceforge.net/) as diff/merge tool)
+* [Atom](https://atom.io/) - a hackable text editor for the 21st Century
+* [PortableGit](https://git-for-windows.github.io/) - git client for Windows (preconfigured with [kdiff3](http://kdiff3.sourceforge.net/) as diff/merge tool)
 * [putty](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html) - the SSH client for Windows
 * [clink](http://mridgers.github.io/clink/) - command completion and Bash-like line editing for Windows
-* [Cygwin](http://www.cygwin.com/)-based `ssh.exe` and `rsync.exe` to make rsync-based Vagrant synced folders work on Windows
+* [cwRsync](https://www.itefix.net/content/cwrsync-free-edition) which includes `ssh.exe` and `rsync.exe` to make rsync-based Vagrant synced folders work on Windows
 
 ### Environmental Changes
 
@@ -51,6 +68,7 @@ The following changes are applied to your environment by running `W:\set-env.bat
 * Constraining as much as possible to the `W:\` drive:
  * `%HOME%` points to `W:\home`
  * `%VAGRANT_HOME%` points to `W:\home\.vagrant.d`
+ * `%CHEFDK_HOME%` points to `W:\home\.chefdk`
  * `%PATH%` is preprended with the bin dirs of the tools in `W:\tools\`
  * **exception**: `%VBOX_USER_HOME%` points to `%USERPROFILE%`, i.e. VirtualBox VMs are still stored under `%USERPROFILE%`
 * Fixing annoyances:
@@ -64,7 +82,8 @@ The following changes are applied to your environment by running `W:\set-env.bat
 Registered doskey aliases:
 
 * run `be <command>` for `bundle exec <command>`
-* run `vi <file_or_dir>` for `sublime_text <file_or_dir>` 
+* run `vi <file_or_dir>` for `atom <file_or_dir>`
+* run `b2d <args>` for `boot2docker <args>`
 
 ### Examples
 
@@ -73,14 +92,14 @@ These repositories are used for acceptance-testing the [common usage scenarios](
 * A [sample-toplevel-cookbook](https://github.com/tknerr/sample-toplevel-cookbook) with all kinds cookbook tests: syntax check, style checks, linting, unit and integration tests
 * A [sample-infrastructure-repo](https://github.com/tknerr/sample-infrastructure-repo) which defines a sample server infrastructure with environments and databages via Vagrant / Chef Solo
 
-## Prerequisites
 
-The only requirement for using the devpack is a recent version of [VirtualBox](https://www.virtualbox.org/wiki/Downloads) (couldn't make that one portable).
+## Building from Source (Development)
 
+As a prerequisite for building bill's kitchen you need:
 
-## Installation
-
-As a prerequisite for building bill's kitchen you need 7zip installed in `C:\Program Files\7-Zip\7z.exe`.
+* a Windows host
+* 7zip installed in `C:\Program Files\7-Zip\7z.exe`
+* a Ruby environment (if you don't have one, use [this Ruby DevPack](https://github.com/tknerr/ruby-devpack/releases))
 
 ### Building Bill's Kitchen
 
@@ -122,20 +141,11 @@ By default the Ruby DevPack will be mounted to the `W:\` drive. If you need to c
 * `mount-drive.cmd`
 * `unmount-drive.cmd`
 
-## Usage
-
-Make sure you have [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then:
-
-1. unzip the `target/bills-kitchen-<version>.7z` somewhere
-2. mount the kitchen to the `W:\` drive by double-clicking the `mount-drive.bat` file
-3. click `W:\Launch ConEmu.lnk` to open a command prompt
-4. in the command prompt run `W:\set-env.bat` to set up the environment
-5. start hacking!
-
 ## Acknowledgements & Licensing
 
 Bill's Kitchen bundles lots of awesome Open Source software. The copyright owners of this software are mentioned here. For a full-text version of the licenses mentioned above please have a look in the `tools` directory where the respective software is installed.
 
+* Atom - Copyright (c) 2014 GitHub Inc. (MIT license)
 * Vagrant - Copyright (c) 2010-2014 Mitchell Hashimoto (MIT license)
 * Packer - Copyright (c) 2013-2014 Mitchell Hashimoto (MPL-2.0)
 * Terraform - Copyright (c) 2014-2015 HashiCorp (MPL-2.0)
@@ -147,9 +157,6 @@ Bill's Kitchen bundles lots of awesome Open Source software. The copyright owner
 * DevKit - Copyright (c), 2007-2014 RubyInstaller Team (BSD 3-Clause license)
 * kdiff3 - Copyright (c) 2002-2012 Joachim Eibl (GPLv2 license)
 * putty - Copyright (c) 1997-2014 Simon Tatham (MIT license)
-* rsync - Copyright (c) 1996-2011 by Andrew Tridgell, Wayne Davison, and others. (GPLv3)
-* OpenSSH - multiple licenses and copyright holders (OpenSSH License, BSD-compatible)
-
-It also includes an evaluation copy of the awesome [Sublime Text 2](http://www.sublimetext.com/) editor. Please use it for evaluation purposes only (no commercial usage) or [buy a license](http://www.sublimetext.com/buy) if you like it! 
+* cwRsync - October 2014, provided by Itefix - https://www.itefix.net/cwrsync (BSD 2-Clause license)
 
 Bill's Kitchen itself is published under the MIT license. It is not "derivative work" but rather ["mere aggregation"](https://www.gnu.org/licenses/gpl-faq.html#MereAggregation) of other software and thus does not need to be licensed under GPL itself.
