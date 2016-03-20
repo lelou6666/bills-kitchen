@@ -27,6 +27,7 @@ task :build do
   fix_chefdk
   fix_vagrant
   copy_files
+  fix_bundler
   generate_docs
   install_knife_plugins
   install_vagrant_plugins
@@ -120,18 +121,18 @@ def download_tools
     %w{ get.docker.com/builds/Windows/x86_64/docker-1.7.1.exe                                                 docker/docker.exe },
     %w{ github.com/Maximus5/ConEmu/releases/download/v15.07.28/ConEmuPack.150728.7z                         conemu },
     %w{ github.com/mridgers/clink/releases/download/0.4.4/clink_0.4.4_setup.exe                             clink },
-    %w{ github.com/atom/atom/releases/download/v1.0.4/atom-windows.zip                                      atom },
-    %w{ github.com/msysgit/msysgit/releases/download/Git-1.9.5-preview20150319/PortableGit-1.9.5-preview20150319.7z   portablegit },
+    %w{ github.com/atom/atom/releases/download/v1.0.9/atom-windows.zip                                      atom },
+    %w{ github.com/git-for-windows/git/releases/download/v2.5.0.windows.1/PortableGit-2.5.0-64-bit.7z.exe   portablegit },
     %w{ cdn.rubyinstaller.org/archives/devkits/DevKit-mingw64-32-4.7.2-20130224-1151-sfx.exe                devkit },
     %w{ downloads.sourceforge.net/project/kdiff3/kdiff3/0.9.96/KDiff3Setup_0.9.96.exe                       kdiff3
         kdiff3.exe },
     %w{ the.earth.li/~sgtatham/putty/0.63/x86/putty.zip                                                     putty },
     %w{ www.itefix.net/dl/cwRsync_5.4.1_x86_Free.zip                                                        cwrsync },
     %w{ dl.bintray.com/mitchellh/vagrant/vagrant_1.7.4.msi                                                  vagrant },
-    %w{ dl.bintray.com/mitchellh/terraform/terraform_0.6.1_windows_amd64.zip                                terraform },
-    %w{ dl.bintray.com/mitchellh/packer/packer_0.8.2_windows_amd64.zip                                      packer },
+    %w{ dl.bintray.com/mitchellh/terraform/terraform_0.6.3_windows_amd64.zip                                terraform },
+    %w{ dl.bintray.com/mitchellh/packer/packer_0.8.6_windows_amd64.zip                                      packer },
     %w{ dl.bintray.com/mitchellh/consul/0.5.2_windows_386.zip                                               consul },
-    %w{ opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chefdk-0.6.0-1.msi                  chef-dk }
+    %w{ opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chefdk-0.7.0-1.msi                  chef-dk }
   ]
   .each do |host_and_path, target_dir, includes = ''|
     download_and_unpack "http://#{host_and_path}", "#{BUILD_DIR}/tools/#{target_dir}", includes.split('|')
@@ -169,6 +170,29 @@ def fix_vagrant
   orig = "#{BUILD_DIR}/tools/vagrant/HashiCorp/Vagrant/embedded/gems/gems/vagrant-1.7.4/plugins/synced_folders/rsync/helper.rb"
   patched = File.read(orig).gsub('hostpath = Vagrant::Util', 'hostpath = "/cygdrive" + Vagrant::Util')
   File.write(orig, patched)
+end
+
+def fix_bundler
+  # manually restore a good bundler version until chef/omnibus-chef#464 is fixed
+  Bundler.with_clean_env do
+    command = "#{BUILD_DIR}/set-env.bat \
+    && chef gem install bundler -v 1.10.6 --no-ri --no-rdoc"
+    fail "updating bundler to 1.10.6 failed" unless system(command)
+  end
+  # also temporarily patch vagrant until test-kitchen/kitchen-vagrant#190 is fixed
+  gemspec = "#{BUILD_DIR}/tools/vagrant/HashiCorp/Vagrant/embedded/gems/gems/vagrant-1.7.4/vagrant.gemspec"
+  gemspec2 = "#{BUILD_DIR}/tools/vagrant/HashiCorp/Vagrant/embedded/gems/specifications/vagrant-1.7.4.gemspec"
+  File.write(gemspec, File.read(gemspec).gsub('1.10.5', '1.10.6'))
+  File.write(gemspec2, File.read(gemspec2).gsub('1.10.5', '1.10.6'))
+  # fix the paths to relative ones to make it portable
+  Dir.glob("#{BUILD_DIR}/home/.chefdk/gem/ruby/2.1.0/bin/bundle*").each do |file|
+    if File.extname(file).empty?  # do this only for the extensionless files
+      File.write(file, File.read(file).gsub(/^(.*tools\/chefdk\/embedded\/bin\/ruby.exe)$/, '#!/usr/bin/env ruby'))
+    end
+  end
+  Dir.glob("#{BUILD_DIR}/home/.chefdk/gem/ruby/2.1.0/bin/bundle*.bat").each do |file|
+    File.write(file, File.read(file).gsub(/^(.*tools\\chefdk\\embedded\\bin\\ruby\.exe" "%~dpn0" %\*)$/, '@"%~dp0\\..\\..\\..\\..\\..\\..\\tools\\chefdk\\embedded\\bin\\ruby.exe" "%~dpn0" %*'))
+  end
 end
 
 def install_knife_plugins
@@ -216,7 +240,7 @@ end
 
 def pre_packaging_checks
   chefdk_gem_bindir = "#{BUILD_DIR}/home/.chefdk/gem/ruby/2.1.0/bin"
-  if not Dir[chefdk_gem_bindir].empty?
+  unless Dir.glob("#{chefdk_gem_bindir}/*").reject{|d| d.include? 'bundle'}.empty?
     raise "beware: gem binaries in '#{chefdk_gem_bindir}' might use an absolute path to ruby.exe! Use `gem pristine` to fix it."
   end
 end
@@ -279,7 +303,7 @@ def download_no_cache(url, outfile, limit=5)
       redirect_url = response['location']
       if(redirect_url)
         unless redirect_url.start_with? "http"
-          redirect_url = ""#{uri.scheme}://#{uri.host}:#{uri.port}#{redirect_url}"
+          redirect_url = "#{uri.scheme}://#{uri.host}:#{uri.port}#{redirect_url}"
         end
         puts "redirecting to #{redirect_url}"
         download_no_cache(redirect_url, outfile, limit - 1)

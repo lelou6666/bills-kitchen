@@ -1,21 +1,34 @@
 
 # 3.0-SNAPSHOT (unreleased)
 
+ * improvements:
+   * make sure the chef omnibus installer is cached during test-kitchen runs
+   * make sure the chef `file_cache_path` is cached during test-kitchen runs 
+
+
+# 3.0-rc6 (Sept 7, 2015)
+
  * tool updates:
    * update to ConEmu 20150728
-   * update to Atom 1.0.4
+   * update to Atom 1.0.9
    * update to Consul 0.5.2
-   * update to Terraform 0.6.1
-   * update to Packer 0.8.2
+   * update to Terraform 0.6.3
+   * update to Packer 0.8.6
    * update to Docker 1.7.1
    * update to Vagrant 1.7.4
+   * update to ChefDK 0.7.0
+   * update to PortableGit 2.5.0 (aka "Git for Windows")
  * plugin updates:
    * update to vagrant-cachier 1.2.1 (with chef-zero support)
    * update to vagrant-proxyconf 1.5.1
  * bug fixes:
    * ensure that the vagrant remote docker host patch is always enabled (see [#114](https://github.com/tknerr/bills-kitchen/issues/114))
+   * get the actual remote docker host ip address from the `DOCKER_HOST` env var instead of using a hard coded default (see [#130](https://github.com/tknerr/bills-kitchen/pull/130))
+   * fix detection of the forwarded ssh port when multiple remote docker containers are started (see [#130](https://github.com/tknerr/bills-kitchen/pull/130))
  * improvements:
    * allow to run acceptance tests using either virtualbox or docker provider
+ * patches:
+   * update the ChefDK included bundler to 1.10.6 (and [temporarily patched Vagrant](https://github.com/test-kitchen/kitchen-vagrant/issues/190#ref-commit-1176eca)) so we can benefit from the [bugfix](https://github.com/bundler/bundler/issues/3799) which makes parallel downloading work again
 
 
 # 3.0-rc5 (May 17, 2015)
